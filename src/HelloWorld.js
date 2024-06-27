@@ -18,24 +18,68 @@ const HelloWorld = () => {
   const [newMessage, setNewMessage] = useState("");
 
   //called only once
-  useEffect(async () => {
-    
+  useEffect(() => {
+    async function fetchMessage() {
+      const message = await loadCurrentMessage();
+      console.log(`-----------${message}-----------`);
+      setMessage(message);
+    }
+    fetchMessage();
+    addSmartContractListener();  
+
+    async function getCurrentWallet() {
+      const { address, status } = await getCurrentWalletConnected()
+      setWallet(address)
+      setStatus(status)
+    }
+    getCurrentWallet();
+    addWalletListener();
   }, []);
 
   function addSmartContractListener() { //TODO: implement
-    
+    helloWorldContract.events.UpdatedMessages({}, (error, data) => {
+      if (error) {
+        setStatus("😥 " + error.message);
+      } else {
+        setMessage(data.returnValues[1]);
+        setNewMessage("");
+        setStatus("🎉 Your message has been updated!");
+      }
+    });
   }
 
   function addWalletListener() { //TODO: implement
-    
+    if (window.ethereum) {
+      window.ethereum.on("accountsChanged", (accounts) => {
+        if (accounts.length > 0) {
+          setWallet(accounts[0])
+          setStatus("👆🏽 Write a message in the text-field above.")
+        } else {
+          setWallet("")
+          setStatus("🦊 Connect to MetaMask using the top right button.")
+        }
+      })
+    } else {
+      setStatus(
+        <p>
+          {" "}
+          🦊 <a target="_blank" href={`https://metamask.io/download.html`}>
+            You must install MetaMask, a virtual Ethereum wallet, in your browser.
+          </a>
+        </p>
+      )
+    }  
   }
 
   const connectWalletPressed = async () => { //TODO: implement
-    
+    const walletResponse = await connectWallet();
+    setStatus(walletResponse.status);
+    setWallet(walletResponse.address);
   };
 
   const onUpdatePressed = async () => { //TODO: implement
-    
+    const { status } = await updateMessage(walletAddress, newMessage)
+    setStatus(status)
   };
 
   //the UI of our component
